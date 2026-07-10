@@ -32,7 +32,7 @@ fun TrackDetailScreen(
     val tracks by viewModel.tracks.observeAsState(emptyList())
     val track = tracks.find { it.id == trackId }
 
-    var showDeleteDialog by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
 
     val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
 
@@ -46,7 +46,7 @@ fun TrackDetailScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            if (track != null) {
+            if (track != null && !showDeleteConfirm) {
                 Text(
                     text = track.name,
                     style = MaterialTheme.typography.title3,
@@ -55,7 +55,6 @@ fun TrackDetailScreen(
 
                 Card(
                     onClick = { },
-                    enabled = false,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
@@ -90,7 +89,7 @@ fun TrackDetailScreen(
                     }
 
                     Button(
-                        onClick = { showDeleteDialog = true },
+                        onClick = { showDeleteConfirm = true },
                         colors = ButtonDefaults.buttonColors(
                             backgroundColor = MaterialTheme.colors.error
                         ),
@@ -100,32 +99,41 @@ fun TrackDetailScreen(
                     }
                 }
 
-                if (showDeleteDialog) {
-                    Alert(
-                        title = { Text("Delete Track?") },
-                        negativeButton = {
-                            Button(
-                                onClick = { showDeleteDialog = false },
-                                colors = ButtonDefaults.buttonColors(
-                                    backgroundColor = MaterialTheme.colors.surface
-                                )
-                            ) {
-                                Text("Cancel")
-                            }
+                CompactButton(onClick = onNavigateBack) {
+                    Text(text = "Back")
+                }
+            } else if (showDeleteConfirm && track != null) {
+                // Simple delete confirmation
+                Text(
+                    text = "Delete?",
+                    style = MaterialTheme.typography.title3,
+                    color = MaterialTheme.colors.error
+                )
+                Text(
+                    text = track.name,
+                    style = MaterialTheme.typography.body2
+                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = {
+                            viewModel.deleteTrack(track.id)
+                            showDeleteConfirm = false
+                            onNavigateBack()
                         },
-                        positiveButton = {
-                            Button(
-                                onClick = {
-                                    viewModel.deleteTrack(track.id)
-                                    showDeleteDialog = false
-                                    onNavigateBack()
-                                }
-                            ) {
-                                Text("Delete")
-                            }
-                        }
+                        colors = ButtonDefaults.buttonColors(
+                            backgroundColor = MaterialTheme.colors.error
+                        ),
+                        modifier = Modifier.size(48.dp)
                     ) {
-                        Text("This track will be permanently deleted.")
+                        Text("Yes", style = MaterialTheme.typography.caption3)
+                    }
+                    Button(
+                        onClick = { showDeleteConfirm = false },
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Text("No", style = MaterialTheme.typography.caption3)
                     }
                 }
             } else {
@@ -134,15 +142,9 @@ fun TrackDetailScreen(
                     style = MaterialTheme.typography.body2,
                     color = MaterialTheme.colors.error
                 )
-            }
-
-            CompactButton(
-                onClick = onNavigateBack,
-                colors = ButtonDefaults.compactButtonColors(
-                    backgroundColor = MaterialTheme.colors.surface
-                )
-            ) {
-                Text(text = "Back")
+                CompactButton(onClick = onNavigateBack) {
+                    Text(text = "Back")
+                }
             }
         }
     }

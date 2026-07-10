@@ -12,6 +12,7 @@ import com.example.gpslogger.ui.components.StatusCard
 import com.example.gpslogger.ui.viewmodel.MainViewModel
 import com.example.gpslogger.ui.viewmodel.MainViewModelFactory
 import com.example.gpslogger.GpsLoggerApp
+import kotlinx.coroutines.delay
 
 /**
  * Main screen - GPS recording control panel
@@ -28,17 +29,6 @@ fun MainScreen(
     val distance by viewModel.distance.observeAsState(0.0)
     val elapsedTime by viewModel.elapsedTime.observeAsState(0L)
     val batteryLevel by viewModel.batteryLevel.observeAsState(100)
-    val exportResult by viewModel.exportResult.observeAsState(null)
-
-    val snackbarState = remember { SnackbarHostState() }
-
-    // Show export result as snackbar
-    LaunchedEffect(exportResult) {
-        exportResult?.let {
-            snackbarState.showSnackbar(it)
-            viewModel.clearExportResult()
-        }
-    }
 
     // Refresh battery every 30 seconds
     LaunchedEffect(Unit) {
@@ -49,8 +39,7 @@ fun MainScreen(
     }
 
     Scaffold(
-        timeText = { TimeText() },
-        snackbar = { SnackbarHost(snackbarState) }
+        timeText = { TimeText() }
     ) {
         Column(
             modifier = Modifier
@@ -97,10 +86,7 @@ fun MainScreen(
             }
 
             CompactButton(
-                onClick = onNavigateToTracks,
-                colors = ButtonDefaults.compactButtonColors(
-                    backgroundColor = MaterialTheme.colors.surface
-                )
+                onClick = onNavigateToTracks
             ) {
                 Text(
                     text = "Tracks",

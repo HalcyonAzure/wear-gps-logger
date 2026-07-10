@@ -11,7 +11,6 @@ import com.example.gpslogger.data.TrackRepository
 import com.example.gpslogger.export.GpxExporter
 import com.example.gpslogger.service.GpsTrackingService
 import com.example.gpslogger.GpsLoggerApp
-import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import android.content.Intent
 import android.os.BatteryManager
@@ -77,7 +76,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
             observeServiceLiveData(trackingService!!.isRecording) { _isRecording.value = it }
             observeServiceLiveData(trackingService!!.locationCount) { _pointCount.value = it }
-            observeServiceLiveData(trackingService!!.currentDistance) { _currentDistance.value = it }
+            observeServiceLiveData(trackingService!!.currentDistance) { _distance.value = it }
             observeServiceLiveData(trackingService!!.elapsedTime) { _elapsedTime.value = it }
         }
 

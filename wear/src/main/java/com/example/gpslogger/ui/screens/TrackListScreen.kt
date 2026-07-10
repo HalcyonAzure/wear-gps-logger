@@ -72,10 +72,7 @@ fun TrackListScreen(
             item {
                 Spacer(modifier = Modifier.height(8.dp))
                 CompactButton(
-                    onClick = onNavigateBack,
-                    colors = ButtonDefaults.compactButtonColors(
-                        backgroundColor = MaterialTheme.colors.surface
-                    )
+                    onClick = onNavigateBack
                 ) {
                     Text(text = "Back")
                 }

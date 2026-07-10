@@ -16,9 +16,7 @@ private val DarkColorPalette = Colors(
     onSecondary = Color.White,
     onBackground = Color.White,
     onSurface = Color.White,
-    onError = Color.White,
-    onSurfaceVariant = Color(0xFFB0B0B0),
-    surfaceVariant = Color(0xFF2C2C2C)
+    onError = Color.White
 )
 
 @Composable

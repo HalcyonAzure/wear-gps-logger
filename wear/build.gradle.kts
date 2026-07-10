@@ -57,6 +57,7 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material:material-icons-core")
     implementation("androidx.compose.material:material-icons-extended")
+    implementation("androidx.compose.runtime:runtime-livedata")
 
     // Horologist (Wear OS helper library)
     implementation("com.google.android.horologist:horologist-compose-layout:0.6.17")
