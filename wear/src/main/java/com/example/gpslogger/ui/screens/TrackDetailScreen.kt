@@ -59,54 +59,16 @@ fun TrackDetailScreen(
             verticalArrangement = Arrangement.spacedBy(6.dp),
             autoCentering = AutoCenteringParams(itemIndex = 0)
         ) {
-            if (showDeleteConfirm && track != null) {
+            if (track != null) {
                 item {
-                    Alert(
-                        title = { Text("Delete Track?") },
-                        message = {
-                            Text(
-                                text = track.name,
-                                style = MaterialTheme.typography.body2,
-                                textAlign = TextAlign.Center
-                            )
-                        },
-                        positiveButton = {
-                            Button(
-                                onClick = {
-                                    viewModel.deleteTrack(track.id)
-                                    showDeleteConfirm = false
-                                    onNavigateBack()
-                                },
-                                colors = ButtonDefaults.buttonColors(
-                                    backgroundColor = MaterialTheme.colors.error
-                                ),
-                                modifier = Modifier.size(52.dp)
-                            ) {
-                                Text("Del", style = MaterialTheme.typography.caption2)
-                            }
-                        },
-                        negativeButton = {
-                            Button(
-                                onClick = { showDeleteConfirm = false },
-                                colors = ButtonDefaults.buttonColors(
-                                    backgroundColor = MaterialTheme.colors.secondary
-                                ),
-                                modifier = Modifier.size(52.dp)
-                            ) {
-                                Text("No", style = MaterialTheme.typography.caption2)
-                            }
-                        }
-                    )
-                }
-            } else if (track != null) {
-                item {
-                    CurvedText(
+                    Text(
                         text = track.name,
-                        style = CurvedTextStyle(
-                            fontSize = MaterialTheme.typography.title3.fontSize,
-                            color = MaterialTheme.colors.primary
-                        ),
-                        angularDirection = CurvedText.AngularDirection.CLOCKWISE
+                        style = MaterialTheme.typography.title3,
+                        color = MaterialTheme.colors.primary,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
 
@@ -182,6 +144,61 @@ fun TrackDetailScreen(
             }
         }
     }
+
+    // Delete confirmation dialog overlay
+    if (showDeleteConfirm && track != null) {
+        Dialog(
+            onDismissRequest = { showDeleteConfirm = false }
+        ) {
+            Card(
+                onClick = { },
+                modifier = Modifier.fillMaxWidth(0.85f).wrapContentHeight()
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Delete Track?",
+                        style = MaterialTheme.typography.title3,
+                        color = MaterialTheme.colors.error
+                    )
+                    Text(
+                        text = track.name,
+                        style = MaterialTheme.typography.body2,
+                        textAlign = TextAlign.Center
+                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                viewModel.deleteTrack(track.id)
+                                showDeleteConfirm = false
+                                onNavigateBack()
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                backgroundColor = MaterialTheme.colors.error
+                            ),
+                            modifier = Modifier.size(52.dp)
+                        ) {
+                            Text("Del", style = MaterialTheme.typography.caption2)
+                        }
+                        Button(
+                            onClick = { showDeleteConfirm = false },
+                            colors = ButtonDefaults.buttonColors(
+                                backgroundColor = MaterialTheme.colors.secondary
+                            ),
+                            modifier = Modifier.size(52.dp)
+                        ) {
+                            Text("No", style = MaterialTheme.typography.caption2)
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -193,7 +210,10 @@ private fun TrackStatsCard(
     Card(
         onClick = { },
         modifier = modifier.fillMaxWidth(0.92f).wrapContentHeight(),
-        backgroundColor = MaterialTheme.colors.surface
+        backgroundPainter = CardDefaults.cardBackgroundPainter(
+            startBackgroundColor = MaterialTheme.colors.surface,
+            endBackgroundColor = MaterialTheme.colors.surface
+        )
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),

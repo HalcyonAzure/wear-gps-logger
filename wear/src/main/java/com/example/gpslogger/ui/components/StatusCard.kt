@@ -1,5 +1,6 @@
 package com.example.gpslogger.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
@@ -12,9 +13,6 @@ import androidx.wear.compose.material.*
 
 /**
  * StatusCard - GPS 状态卡片 (圆形屏幕优化版)
- *
- * 3行信息设计：状态指示 / 时间(大字) / 距离·点数·电池
- * 限制宽度 0.92f 确保在圆形安全区域内
  */
 @Composable
 fun StatusCard(
@@ -30,7 +28,10 @@ fun StatusCard(
         modifier = modifier
             .fillMaxWidth(0.92f)
             .wrapContentHeight(),
-        backgroundColor = MaterialTheme.colors.surface
+        backgroundPainter = CardDefaults.cardBackgroundPainter(
+            startBackgroundColor = MaterialTheme.colors.surface,
+            endBackgroundColor = MaterialTheme.colors.surface
+        )
     ) {
         Box(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
@@ -52,7 +53,7 @@ fun StatusCard(
                                 .padding(end = 4.dp)
                                 .background(
                                     color = MaterialTheme.colors.error,
-                                    shape = androidx.compose.foundation.shape.CircleShape
+                                    shape = CircleShape
                                 )
                         )
                     }

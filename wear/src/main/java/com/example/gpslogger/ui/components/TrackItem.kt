@@ -33,7 +33,10 @@ fun TrackItem(
         modifier = modifier
             .fillMaxWidth()
             .defaultMinSize(minHeight = 56.dp),
-        backgroundColor = MaterialTheme.colors.surface,
+        backgroundPainter = CardDefaults.cardBackgroundPainter(
+            startBackgroundColor = MaterialTheme.colors.surface,
+            endBackgroundColor = MaterialTheme.colors.surface
+        ),
         enabled = true
     ) {
         Row(
@@ -95,7 +98,7 @@ private fun RecordingIndicator(modifier: Modifier = Modifier) {
                 .size(7.dp)
                 .background(
                     color = MaterialTheme.colors.error.copy(alpha = 0.6f + pulseAlpha * 0.4f),
-                    shape = androidx.compose.foundation.shape.CircleShape
+                    shape = CircleShape
                 )
         )
         Text(

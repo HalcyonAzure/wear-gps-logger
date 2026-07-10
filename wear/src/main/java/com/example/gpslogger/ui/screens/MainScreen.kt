@@ -25,13 +25,6 @@ import kotlinx.coroutines.delay
 
 /**
  * MainScreen - GPS 控制面板主界面 (圆形屏幕优化版)
- *
- * 设计要点：
- * 1. ScalingLazyColumn 支持旋转表冠滚动 + 自动居中
- * 2. 18dp 水平 padding 确保内容在圆形安全区域内
- * 3. 64dp 大录制按钮 + 脉冲动画光环
- * 4. CurvedText 弧形标题利用圆形屏幕特性
- * 5. Chip 替代 CompactButton，更大点击区域
  */
 @Composable
 fun MainScreen(
@@ -67,13 +60,12 @@ fun MainScreen(
             autoCentering = AutoCenteringParams(itemIndex = 0)
         ) {
             item {
-                CurvedText(
+                Text(
                     text = "GPS Logger",
-                    style = CurvedTextStyle(
-                        fontSize = MaterialTheme.typography.title3.fontSize,
-                        color = MaterialTheme.colors.primary
-                    ),
-                    angularDirection = CurvedText.AngularDirection.CLOCKWISE
+                    style = MaterialTheme.typography.title3,
+                    color = MaterialTheme.colors.primary,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 

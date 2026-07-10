@@ -39,13 +39,12 @@ fun TrackListScreen(
             autoCentering = AutoCenteringParams(itemIndex = 0)
         ) {
             item {
-                CurvedText(
+                Text(
                     text = "My Tracks",
-                    style = CurvedTextStyle(
-                        fontSize = MaterialTheme.typography.title3.fontSize,
-                        color = MaterialTheme.colors.primary
-                    ),
-                    angularDirection = CurvedText.AngularDirection.CLOCKWISE
+                    style = MaterialTheme.typography.title3,
+                    color = MaterialTheme.colors.primary,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
