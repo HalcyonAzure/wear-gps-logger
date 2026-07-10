@@ -1,30 +1,34 @@
 package com.example.gpslogger.ui.screens
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.wear.compose.material.*
-import com.example.gpslogger.ui.components.StatRow
+import com.example.gpslogger.GpsLoggerApp
+import com.example.gpslogger.data.Track
 import com.example.gpslogger.ui.components.formatDistance
 import com.example.gpslogger.ui.components.formatElapsedTime
 import com.example.gpslogger.ui.viewmodel.MainViewModel
 import com.example.gpslogger.ui.viewmodel.MainViewModelFactory
-import com.example.gpslogger.GpsLoggerApp
 import java.text.SimpleDateFormat
 import java.util.*
 
+enum class ExportStatus { Idle, Exporting, Success, Error }
+
 /**
- * 轨迹详情界面
- *
- * 操作:
- * - Export: 导出 GPX 到 /sdcard/Documents/GPSLogger/
- * - Del: 删除轨迹
- * - Back: 返回列表
+ * TrackDetailScreen - 轨迹详情 (圆形屏幕优化版)
  */
 @Composable
 fun TrackDetailScreen(
@@ -41,183 +45,238 @@ fun TrackDetailScreen(
     var exportStatus by remember { mutableStateOf(ExportStatus.Idle) }
     var exportPath by remember { mutableStateOf("") }
 
-    val dateFormat = SimpleDateFormat("MM-dd HH:mm", Locale.getDefault())
+    val listState = rememberScalingLazyListState()
+    val shortDateFormat = remember { SimpleDateFormat("MM/dd HH:mm", Locale.getDefault()) }
 
     Scaffold(
-        timeText = { TimeText() }
+        timeText = { TimeText() },
+        positionIndicator = { PositionIndicator(scalingLazyListState = listState) }
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 8.dp, vertical = 4.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ScalingLazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            state = listState,
+            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+            autoCentering = AutoCenteringParams(itemIndex = 0)
         ) {
-            when {
-                // 删除确认界面
-                showDeleteConfirm && track != null -> {
-                    Text(
-                        text = "Delete Track?",
-                        style = MaterialTheme.typography.title3,
-                        color = MaterialTheme.colors.error
+            if (showDeleteConfirm && track != null) {
+                item {
+                    Alert(
+                        title = { Text("Delete Track?") },
+                        message = {
+                            Text(
+                                text = track.name,
+                                style = MaterialTheme.typography.body2,
+                                textAlign = TextAlign.Center
+                            )
+                        },
+                        positiveButton = {
+                            Button(
+                                onClick = {
+                                    viewModel.deleteTrack(track.id)
+                                    showDeleteConfirm = false
+                                    onNavigateBack()
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    backgroundColor = MaterialTheme.colors.error
+                                ),
+                                modifier = Modifier.size(52.dp)
+                            ) {
+                                Text("Del", style = MaterialTheme.typography.caption2)
+                            }
+                        },
+                        negativeButton = {
+                            Button(
+                                onClick = { showDeleteConfirm = false },
+                                colors = ButtonDefaults.buttonColors(
+                                    backgroundColor = MaterialTheme.colors.secondary
+                                ),
+                                modifier = Modifier.size(52.dp)
+                            ) {
+                                Text("No", style = MaterialTheme.typography.caption2)
+                            }
+                        }
                     )
-                    Text(
+                }
+            } else if (track != null) {
+                item {
+                    CurvedText(
                         text = track.name,
-                        style = MaterialTheme.typography.body2,
-                        textAlign = TextAlign.Center
+                        style = CurvedTextStyle(
+                            fontSize = MaterialTheme.typography.title3.fontSize,
+                            color = MaterialTheme.colors.primary
+                        ),
+                        angularDirection = CurvedText.AngularDirection.CLOCKWISE
                     )
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Button(
-                            onClick = {
-                                viewModel.deleteTrack(track.id)
-                                showDeleteConfirm = false
-                                onNavigateBack()
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                backgroundColor = MaterialTheme.colors.error
-                            ),
-                            modifier = Modifier.size(52.dp)
-                        ) {
-                            Text("Yes", style = MaterialTheme.typography.caption3)
-                        }
-                        Button(
-                            onClick = { showDeleteConfirm = false },
-                            modifier = Modifier.size(52.dp)
-                        ) {
-                            Text("No", style = MaterialTheme.typography.caption3)
-                        }
+                }
+
+                item {
+                    TrackStatsCard(track = track, shortDateFormat = shortDateFormat)
+                }
+
+                if (exportStatus != ExportStatus.Idle) {
+                    item {
+                        ExportStatusIndicator(status = exportStatus, exportPath = exportPath)
                     }
                 }
 
-                // 正常详情界面
-                track != null -> {
-                    // 轨迹名称
-                    Text(
-                        text = track.name,
-                        style = MaterialTheme.typography.title3,
-                        color = MaterialTheme.colors.primary,
-                        textAlign = TextAlign.Center
-                    )
-
-                    // 统计信息卡片
-                    Card(
-                        onClick = { },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(8.dp)
-                        ) {
-                            StatRow(label = "Points", value = "${track.pointCount}")
-                            StatRow(label = "Distance", value = formatDistance(track.distanceMeters))
-                            StatRow(label = "Start", value = dateFormat.format(Date(track.startTime)))
-                            track.endTime?.let {
-                                StatRow(label = "End", value = dateFormat.format(Date(it)))
-                                val duration = it - track.startTime
-                                StatRow(label = "Duration", value = formatElapsedTime(duration))
-                            }
-                        }
-                    }
-
-                    // 导出状态显示
-                    when (exportStatus) {
-                        ExportStatus.Exporting -> {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                strokeWidth = 2.dp
-                            )
-                            Text(
-                                text = "Exporting...",
-                                style = MaterialTheme.typography.caption3,
-                                color = MaterialTheme.colors.secondary
-                            )
-                        }
-                        ExportStatus.Success -> {
-                            Text(
-                                text = "Exported!",
-                                style = MaterialTheme.typography.caption2,
-                                color = MaterialTheme.colors.primary
-                            )
-                            Text(
-                                text = exportPath,
-                                style = MaterialTheme.typography.caption3,
-                                color = MaterialTheme.colors.onSurfaceVariant,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                        ExportStatus.Error -> {
-                            Text(
-                                text = exportPath, // 错误信息
-                                style = MaterialTheme.typography.caption3,
-                                color = MaterialTheme.colors.error,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                        else -> { /* Idle - 不显示 */ }
-                    }
-
-                    // 操作按钮行
+                item {
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Button(
                             onClick = {
                                 exportStatus = ExportStatus.Exporting
-                                viewModel.exportTrack(track) { resultPath, success ->
-                                    if (success) {
-                                        exportStatus = ExportStatus.Success
-                                        exportPath = resultPath
-                                    } else {
-                                        exportStatus = ExportStatus.Error
-                                        exportPath = resultPath
-                                    }
+                                viewModel.exportTrack(track) { path, success ->
+                                    exportPath = path
+                                    exportStatus = if (success) ExportStatus.Success else ExportStatus.Error
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(
                                 backgroundColor = MaterialTheme.colors.secondary
                             ),
-                            modifier = Modifier.size(52.dp),
-                            enabled = exportStatus != ExportStatus.Exporting
+                            modifier = Modifier.size(56.dp)
                         ) {
-                            Text("Export", style = MaterialTheme.typography.caption3)
+                            Text("Export", style = MaterialTheme.typography.caption2, maxLines = 1)
                         }
-
                         Button(
                             onClick = { showDeleteConfirm = true },
                             colors = ButtonDefaults.buttonColors(
                                 backgroundColor = MaterialTheme.colors.error
                             ),
-                            modifier = Modifier.size(52.dp)
+                            modifier = Modifier.size(56.dp)
                         ) {
-                            Text("Del", style = MaterialTheme.typography.caption3)
+                            Text("Del", style = MaterialTheme.typography.caption2, maxLines = 1)
                         }
-                    }
-
-                    // 返回按钮
-                    CompactButton(onClick = onNavigateBack) {
-                        Text(text = "Back")
                     }
                 }
 
-                // 轨迹不存在
-                else -> {
+                item {
+                    Chip(
+                        onClick = onNavigateBack,
+                        label = { Text("Back") },
+                        modifier = Modifier.fillMaxWidth(0.75f),
+                        colors = ChipDefaults.secondaryChipColors()
+                    )
+                }
+
+                item { Spacer(modifier = Modifier.height(16.dp)) }
+            } else {
+                item {
                     Text(
                         text = "Track not found",
                         style = MaterialTheme.typography.body2,
                         color = MaterialTheme.colors.error
                     )
-                    CompactButton(onClick = onNavigateBack) {
-                        Text(text = "Back")
-                    }
+                }
+                item {
+                    Chip(
+                        onClick = onNavigateBack,
+                        label = { Text("Back") },
+                        modifier = Modifier.fillMaxWidth(0.75f),
+                        colors = ChipDefaults.secondaryChipColors()
+                    )
                 }
             }
         }
     }
 }
 
-enum class ExportStatus {
-    Idle, Exporting, Success, Error
+@Composable
+private fun TrackStatsCard(
+    track: Track,
+    shortDateFormat: SimpleDateFormat,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        onClick = { },
+        modifier = modifier.fillMaxWidth(0.92f).wrapContentHeight(),
+        backgroundColor = MaterialTheme.colors.surface
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = "${formatDistance(track.distanceMeters)} km",
+                style = MaterialTheme.typography.title2,
+                color = MaterialTheme.colors.primary,
+                textAlign = TextAlign.Center,
+                maxLines = 1
+            )
+            Text(
+                text = "${track.pointCount} points",
+                style = MaterialTheme.typography.body2,
+                color = MaterialTheme.colors.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Box(
+                modifier = Modifier.fillMaxWidth(0.8f).height(1.dp)
+                    .background(MaterialTheme.colors.onSurfaceVariant.copy(alpha = 0.2f))
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                DateTimeItem(label = "Start", value = shortDateFormat.format(Date(track.startTime)))
+                track.endTime?.let {
+                    DateTimeItem(label = "End", value = shortDateFormat.format(Date(it)))
+                }
+            }
+            track.endTime?.let {
+                Text(
+                    text = "Duration: ${formatElapsedTime(it - track.startTime)}",
+                    style = MaterialTheme.typography.caption2,
+                    color = MaterialTheme.colors.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+            } ?: run {
+                Text(
+                    text = "Ongoing: ${formatElapsedTime(System.currentTimeMillis() - track.startTime)}",
+                    style = MaterialTheme.typography.caption2,
+                    color = MaterialTheme.colors.primary,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DateTimeItem(label: String, value: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(text = label, style = MaterialTheme.typography.caption3, color = MaterialTheme.colors.onSurfaceVariant)
+        Text(text = value, style = MaterialTheme.typography.caption2, color = MaterialTheme.colors.onSurface, textAlign = TextAlign.Center)
+    }
+}
+
+@Composable
+private fun ExportStatusIndicator(status: ExportStatus, exportPath: String, modifier: Modifier = Modifier) {
+    Box(modifier = modifier.fillMaxWidth().padding(vertical = 4.dp), contentAlignment = Alignment.Center) {
+        when (status) {
+            ExportStatus.Exporting -> {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, indicatorColor = MaterialTheme.colors.primary)
+                    Text(text = "Exporting...", style = MaterialTheme.typography.caption2, color = MaterialTheme.colors.onSurfaceVariant)
+                }
+            }
+            ExportStatus.Success -> {
+                Text(text = "\u2713 Exported", style = MaterialTheme.typography.caption2, color = MaterialTheme.colors.primary)
+            }
+            ExportStatus.Error -> {
+                Text(
+                    text = exportPath,
+                    style = MaterialTheme.typography.caption3,
+                    color = MaterialTheme.colors.error,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            else -> { }
+        }
+    }
 }

@@ -3,17 +3,18 @@ package com.example.gpslogger.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.wear.compose.material.*
+import com.example.gpslogger.GpsLoggerApp
 import com.example.gpslogger.ui.components.TrackItem
 import com.example.gpslogger.ui.viewmodel.MainViewModel
 import com.example.gpslogger.ui.viewmodel.MainViewModelFactory
-import com.example.gpslogger.GpsLoggerApp
 
 /**
- * Track list screen
+ * TrackListScreen - 轨迹列表 (圆形屏幕优化版)
  */
 @Composable
 fun TrackListScreen(
@@ -26,10 +27,6 @@ fun TrackListScreen(
     val tracks by viewModel.tracks.observeAsState(emptyList())
     val listState = rememberScalingLazyListState()
 
-    LaunchedEffect(Unit) {
-        viewModel.loadTracks()
-    }
-
     Scaffold(
         timeText = { TimeText() },
         positionIndicator = { PositionIndicator(scalingLazyListState = listState) }
@@ -37,46 +34,65 @@ fun TrackListScreen(
         ScalingLazyColumn(
             modifier = Modifier.fillMaxSize(),
             state = listState,
-            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
             autoCentering = AutoCenteringParams(itemIndex = 0)
         ) {
             item {
-                ListHeader {
-                    Text(
-                        text = "Tracks",
-                        style = MaterialTheme.typography.title3
-                    )
-                }
+                CurvedText(
+                    text = "My Tracks",
+                    style = CurvedTextStyle(
+                        fontSize = MaterialTheme.typography.title3.fontSize,
+                        color = MaterialTheme.colors.primary
+                    ),
+                    angularDirection = CurvedText.AngularDirection.CLOCKWISE
+                )
             }
 
             if (tracks.isEmpty()) {
                 item {
-                    Text(
-                        text = "No tracks yet",
-                        style = MaterialTheme.typography.body2,
-                        color = MaterialTheme.colors.onSurfaceVariant,
-                        modifier = Modifier.padding(vertical = 16.dp)
-                    )
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "\uD83D\uDCCD",
+                            style = MaterialTheme.typography.title2,
+                            color = MaterialTheme.colors.onSurfaceVariant.copy(alpha = 0.5f)
+                        )
+                        Text(
+                            text = "No tracks yet",
+                            style = MaterialTheme.typography.body2,
+                            color = MaterialTheme.colors.onSurfaceVariant
+                        )
+                        Text(
+                            text = "Tap record to start",
+                            style = MaterialTheme.typography.caption3,
+                            color = MaterialTheme.colors.onSurfaceVariant.copy(alpha = 0.7f)
+                        )
+                    }
                 }
             } else {
                 items(tracks.size) { index ->
-                    val track = tracks[index]
                     TrackItem(
-                        track = track,
-                        onClick = { onTrackClick(track.id) }
+                        track = tracks[index],
+                        onClick = { onTrackClick(tracks[index].id) }
                     )
                 }
             }
 
             item {
-                Spacer(modifier = Modifier.height(8.dp))
-                CompactButton(
-                    onClick = onNavigateBack
-                ) {
-                    Text(text = "Back")
-                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Chip(
+                    onClick = onNavigateBack,
+                    label = { Text("Back") },
+                    modifier = Modifier.fillMaxWidth(0.75f),
+                    colors = ChipDefaults.secondaryChipColors()
+                )
             }
+
+            item { Spacer(modifier = Modifier.height(16.dp)) }
         }
     }
 }

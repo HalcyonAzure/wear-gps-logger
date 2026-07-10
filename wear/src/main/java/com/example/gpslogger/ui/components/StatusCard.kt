@@ -1,17 +1,20 @@
 package com.example.gpslogger.ui.components
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.wear.compose.material.Card
-import androidx.wear.compose.material.MaterialTheme
-import androidx.wear.compose.material.Text
+import androidx.wear.compose.material.*
 
 /**
- * Status display card
+ * StatusCard - GPS 状态卡片 (圆形屏幕优化版)
+ *
+ * 3行信息设计：状态指示 / 时间(大字) / 距离·点数·电池
+ * 限制宽度 0.92f 确保在圆形安全区域内
  */
 @Composable
 fun StatusCard(
@@ -24,80 +27,159 @@ fun StatusCard(
 ) {
     Card(
         onClick = { },
-        enabled = false,
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier
+            .fillMaxWidth(0.92f)
+            .wrapContentHeight(),
+        backgroundColor = MaterialTheme.colors.surface
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        Box(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+            contentAlignment = Alignment.Center
         ) {
-            val statusText = when {
-                isRecording -> "Recording \u25CF"
-                pointCount > 0 -> "Stopped"
-                else -> "Ready"
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (isRecording) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .padding(end = 4.dp)
+                                .background(
+                                    color = MaterialTheme.colors.error,
+                                    shape = androidx.compose.foundation.shape.CircleShape
+                                )
+                        )
+                    }
+                    Text(
+                        text = when {
+                            isRecording -> "REC"
+                            pointCount > 0 -> "PAUSED"
+                            else -> "READY"
+                        },
+                        style = MaterialTheme.typography.caption2,
+                        color = when {
+                            isRecording -> MaterialTheme.colors.error
+                            pointCount > 0 -> MaterialTheme.colors.secondary
+                            else -> MaterialTheme.colors.onSurfaceVariant
+                        },
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                Text(
+                    text = formatElapsedTime(elapsedTime),
+                    style = MaterialTheme.typography.title2,
+                    color = if (isRecording) MaterialTheme.colors.primary
+                    else MaterialTheme.colors.onSurface,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    StatItem(value = formatDistance(distance), label = "km")
+                    Box(
+                        modifier = Modifier
+                            .width(1.dp)
+                            .height(20.dp)
+                            .background(MaterialTheme.colors.onSurfaceVariant.copy(alpha = 0.3f))
+                    )
+                    StatItem(value = "$pointCount", label = "pts")
+                    Box(
+                        modifier = Modifier
+                            .width(1.dp)
+                            .height(20.dp)
+                            .background(MaterialTheme.colors.onSurfaceVariant.copy(alpha = 0.3f))
+                    )
+                    BatteryIndicator(level = batteryLevel)
+                }
             }
-            val statusColor = when {
-                isRecording -> MaterialTheme.colors.primary
-                pointCount > 0 -> MaterialTheme.colors.secondary
-                else -> MaterialTheme.colors.onSurfaceVariant
-            }
-
-            Text(
-                text = statusText,
-                style = MaterialTheme.typography.title3,
-                color = statusColor,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            StatRow(label = "Points", value = "$pointCount")
-            StatRow(label = "Distance", value = formatDistance(distance))
-            StatRow(label = "Time", value = formatElapsedTime(elapsedTime))
-            StatRow(label = "Battery", value = "$batteryLevel%")
         }
     }
 }
 
 @Composable
-fun StatRow(label: String, value: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 1.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
+private fun StatItem(value: String, label: String, modifier: Modifier = Modifier) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.body1,
+            color = MaterialTheme.colors.onSurface,
+            textAlign = TextAlign.Center,
+            maxLines = 1
+        )
         Text(
             text = label,
             style = MaterialTheme.typography.caption3,
-            color = MaterialTheme.colors.onSurfaceVariant
+            color = MaterialTheme.colors.onSurfaceVariant,
+            textAlign = TextAlign.Center
         )
+    }
+}
+
+@Composable
+private fun BatteryIndicator(level: Int, modifier: Modifier = Modifier) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        modifier = modifier
+    ) {
+        Box(
+            modifier = Modifier
+                .width(14.dp)
+                .height(8.dp)
+                .background(
+                    color = MaterialTheme.colors.onSurfaceVariant.copy(alpha = 0.3f),
+                    shape = RoundedCornerShape(2.dp)
+                )
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width((14 * level / 100).dp.coerceAtLeast(2.dp))
+                    .background(
+                        color = when {
+                            level > 50 -> MaterialTheme.colors.primary
+                            level > 20 -> MaterialTheme.colors.secondary
+                            else -> MaterialTheme.colors.error
+                        },
+                        shape = RoundedCornerShape(2.dp)
+                    )
+            )
+        }
         Text(
-            text = value,
-            style = MaterialTheme.typography.caption2,
-            color = MaterialTheme.colors.onSurface
+            text = "$level%",
+            style = MaterialTheme.typography.caption3,
+            color = MaterialTheme.colors.onSurfaceVariant
         )
     }
 }
 
 fun formatDistance(meters: Double): String {
-    return if (meters >= 1000) {
-        String.format("%.2f km", meters / 1000)
-    } else {
-        String.format("%.0f m", meters)
+    return when {
+        meters < 1000 -> "%.0f".format(meters)
+        else -> "%.1f".format(meters / 1000)
     }
 }
 
-fun formatElapsedTime(ms: Long): String {
-    val seconds = ms / 1000
-    val hours = seconds / 3600
-    val minutes = (seconds % 3600) / 60
-    val secs = seconds % 60
+fun formatElapsedTime(elapsedMs: Long): String {
+    val totalSeconds = elapsedMs / 1000
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
     return if (hours > 0) {
-        String.format("%d:%02d:%02d", hours, minutes, secs)
+        "%d:%02d:%02d".format(hours, minutes, seconds)
     } else {
-        String.format("%02d:%02d", minutes, secs)
+        "%02d:%02d".format(minutes, seconds)
     }
 }
