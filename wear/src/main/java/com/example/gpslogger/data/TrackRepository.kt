@@ -2,6 +2,7 @@ package com.example.gpslogger.data
 
 import android.content.Context
 import android.location.Location
+import com.example.gpslogger.GpsLoggerApp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
