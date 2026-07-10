@@ -45,9 +45,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _tracks = MutableLiveData<List<Track>>(emptyList())
     val tracks: LiveData<List<Track>> = _tracks
 
-    private val _exportResult = MutableLiveData<String?>(null)
-    val exportResult: LiveData<String?> = _exportResult
-
     // Store Observer references to prevent memory leaks
     private val serviceObservers = mutableListOf<Pair<LiveData<*>, Observer<*>>>()
 
@@ -132,21 +129,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun exportTrack(track: Track) {
+    /**
+     * 导出轨迹为 GPX
+     * @param track 要导出的轨迹
+     * @param onResult 回调 (路径/消息, 是否成功)
+     */
+    fun exportTrack(track: Track, onResult: (String, Boolean) -> Unit) {
         viewModelScope.launch {
             try {
                 val locations = repository.getTrackLocations(track.id)
                 when (val result = GpxExporter.exportToGpx(getApplication(), track, locations)) {
                     is GpxExporter.ExportResult.Success -> {
-                        _exportResult.value = "Exported: ${result.file.name}"
-                        GpxExporter.shareGpxFile(getApplication(), result.file)
+                        onResult(result.filePath, true)
                     }
                     is GpxExporter.ExportResult.Error -> {
-                        _exportResult.value = "Export failed: ${result.exception.localizedMessage}"
+                        onResult(result.message, false)
                     }
                 }
             } catch (e: Exception) {
-                _exportResult.value = "Export failed: ${e.localizedMessage}"
+                onResult("Export failed: ${e.localizedMessage}", false)
             }
         }
     }
@@ -158,10 +159,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 loadTracks()
             } catch (_: Exception) {}
         }
-    }
-
-    fun clearExportResult() {
-        _exportResult.value = null
     }
 
     fun refreshBatteryLevel() {
